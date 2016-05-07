@@ -40,26 +40,7 @@ public class CombineImageActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_combine_image);
         ButterKnife.inject(this);
-       int h1 = getStatusBarHeight();
-       int h2 = getTitlebarheight();
         initEvent();
-    }
-
-    private void initEvent() {
-        mBgImage.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-
-                if (event.getAction() == MotionEvent.ACTION_DOWN){
-                    Log.d(TAG, "onTouch: "+screenOffset);
-                }else if (event.getAction() == MotionEvent.ACTION_MOVE){
-                    moveViewByLayout(v,(int)event.getRawX(),(int)event.getRawY());
-                }else if (event.getAction() == MotionEvent.ACTION_UP){
-
-                }
-                return true;
-            }
-        });
     }
 
     @Override
@@ -70,6 +51,23 @@ public class CombineImageActivity extends AppCompatActivity {
         dis.getMetrics(display);
         View v = getWindow().findViewById(Window.ID_ANDROID_CONTENT);
         screenOffset = display.heightPixels - v.getHeight();
+    }
+
+    private void initEvent() {
+        mBgImage.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+
+                if (event.getAction() == MotionEvent.ACTION_DOWN){
+
+                }else if (event.getAction() == MotionEvent.ACTION_MOVE){
+                    moveViewByLayout(v,(int)event.getRawX(),(int)event.getRawY());
+                }else if (event.getAction() == MotionEvent.ACTION_UP){
+
+                }
+                return true;
+            }
+        });
     }
 
     /**
@@ -88,44 +86,7 @@ public class CombineImageActivity extends AppCompatActivity {
         view.layout(left, top, width, height);
     }
 
-    private int getStatusBarHeight(){
-        Class<?> c = null;
-        Object obj = null;
-        Field field = null;
-        int x = 0, statusBarHeight = 0;
-        try {
-            c = Class.forName("com.android.internal.R$dimen");
-            obj = c.newInstance();
-            field = c.getField("status_bar_height");
-            x = Integer.parseInt(field.get(obj).toString());
-            statusBarHeight = getResources().getDimensionPixelSize(x);
-        } catch (Exception e1) {
-            e1.printStackTrace();
-        }
-        return statusBarHeight;
-    }
-    private int getTitlebarheight(){
-        //get the status bar height
-        Rect r = new Rect();
-        getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
-        //the root content view
-        View v = getWindow().findViewById(Window.ID_ANDROID_CONTENT);
-        return v.getTop() - r.top;
-    }
 
-    private int getScreenHeight(){
-        Display dis = getWindowManager().getDefaultDisplay();
-        DisplayMetrics displayMetric = new DisplayMetrics();
-        dis.getMetrics(displayMetric);
-        return displayMetric.heightPixels;
-    }
-
-    private int getScreenWidth(){
-        Display dis = getWindowManager().getDefaultDisplay();
-        DisplayMetrics displayMetric = new DisplayMetrics();
-        dis.getMetrics(displayMetric);
-        return displayMetric.widthPixels;
-    }
 
     @OnClick(R.id.combineTwoImageButton)
     public void onClick(View view) {
@@ -147,5 +108,61 @@ public class CombineImageActivity extends AppCompatActivity {
         canvas.drawBitmap(fg,0,0,null);
         canvas.save(Canvas.ALL_SAVE_FLAG);//保存
         canvas.restore();
+    }
+
+    /**
+     * get status bar height
+     * @return
+     */
+    private int getStatusBarHeight(){
+        Class<?> c = null;
+        Object obj = null;
+        Field field = null;
+        int x = 0, statusBarHeight = 0;
+        try {
+            c = Class.forName("com.android.internal.R$dimen");
+            obj = c.newInstance();
+            field = c.getField("status_bar_height");
+            x = Integer.parseInt(field.get(obj).toString());
+            statusBarHeight = getResources().getDimensionPixelSize(x);
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+        return statusBarHeight;
+    }
+
+    /**
+     * get titleBar Height
+     * @return
+     */
+    private int getTitlebarheight(){
+        //get the status bar height
+        Rect r = new Rect();
+        getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
+        //the root content view
+        View v = getWindow().findViewById(Window.ID_ANDROID_CONTENT);
+        return v.getTop() - r.top;
+    }
+
+    /**
+     * get screen height
+     * @return
+     */
+    private int getScreenHeight(){
+        Display dis = getWindowManager().getDefaultDisplay();
+        DisplayMetrics displayMetric = new DisplayMetrics();
+        dis.getMetrics(displayMetric);
+        return displayMetric.heightPixels;
+    }
+
+    /**
+     * get screen width
+     * @return
+     */
+    private int getScreenWidth(){
+        Display dis = getWindowManager().getDefaultDisplay();
+        DisplayMetrics displayMetric = new DisplayMetrics();
+        dis.getMetrics(displayMetric);
+        return displayMetric.widthPixels;
     }
 }
