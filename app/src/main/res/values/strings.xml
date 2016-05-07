@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">CombineImage</string>
+    <string name="combineTwoImage">合并两张图片</string>
+</resources>
