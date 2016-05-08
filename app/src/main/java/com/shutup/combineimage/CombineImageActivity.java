@@ -38,8 +38,9 @@ import butterknife.OnClick;
 public class CombineImageActivity extends AppCompatActivity {
 
     private String TAG = "CombineImageActivity";
-
-
+    private String ContentType = "image/*";
+    private final int RESULT_CODE = 0;   //这里的RESULT_CODE是自己任意定义的
+    private Uri mUri = null;
     private int xStart = 0;
     private int yStart = 0;
     private int x = 0;
@@ -47,6 +48,8 @@ public class CombineImageActivity extends AppCompatActivity {
 
     private int screenOffset = 0;
 
+    @InjectView(R.id.pickImageButton)
+    Button mPickImageButton;
     @InjectView(R.id.combineTwoImageButton)
     Button mCombineTwoImageButton;
     @InjectView(R.id.bgImage)
@@ -60,6 +63,22 @@ public class CombineImageActivity extends AppCompatActivity {
         setContentView(R.layout.activity_combine_image);
         ButterKnife.inject(this);
         initEvent();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK) {        //此处的 RESULT_OK 是系统自定义得一个常量
+            Log.e(TAG, "ActivityResult resultCode error");
+            return;
+        }
+        if (requestCode == RESULT_CODE) {
+            mUri = data.getData();
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inSampleSize = 4;
+            Bitmap temp = BitmapFactory.decodeFile(mUri.getPath(),options);
+            mBgImage.setImageBitmap(temp);
+        }
     }
 
     @Override
@@ -77,25 +96,25 @@ public class CombineImageActivity extends AppCompatActivity {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
 
-                if (event.getAction() == MotionEvent.ACTION_DOWN){
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
                     x = (int) ViewCompat.getX(v);
                     y = (int) ViewCompat.getY(v);
                     xStart = (int) event.getRawX();
                     yStart = (int) event.getRawY();
-                }else if (event.getAction() == MotionEvent.ACTION_MOVE){
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
                     int xEnd = (int) event.getRawX();
                     int yEnd = (int) event.getRawY();
                     int xx = xEnd - xStart + x;
                     int yy = yEnd - yStart + y;
-                    moveViewByLayout(v,xx,yy);
-                    Log.d(TAG, "onTouchMove: "+xx+"_"+yy);
-                }else if (event.getAction() == MotionEvent.ACTION_UP){
+                    moveViewByLayout(v, xx, yy);
+                    Log.d(TAG, "onTouchMove: " + xx + "_" + yy);
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
                     int xEnd = (int) event.getRawX();
                     int yEnd = (int) event.getRawY();
                     int xx = xEnd - xStart + x;
                     int yy = yEnd - yStart + y;
-                    moveViewByLayout(v,xx,yy);
-                    Log.d(TAG, "onTouchUp: "+xx+"_"+yy);
+                    moveViewByLayout(v, xx, yy);
+                    Log.d(TAG, "onTouchUp: " + xx + "_" + yy);
                 }
                 return true;
             }
@@ -119,52 +138,69 @@ public class CombineImageActivity extends AppCompatActivity {
     }
 
 
-
-    @OnClick(R.id.combineTwoImageButton)
+    @OnClick({R.id.pickImageButton,R.id.combineTwoImageButton})
     public void onClick(View view) {
         switch (view.getId()) {
+            case R.id.pickImageButton:
+                jumpToPickImage();
+                break;
             case R.id.combineTwoImageButton:
-                AlertDialog.Builder builder = new  AlertDialog.Builder(CombineImageActivity.this);
-                builder.setTitle(getString(R.string.info_dialog_combine_image_title));
-                builder.setMessage(getString(R.string.info_dialog_combine_image_message));
-                builder.setPositiveButton(getString(R.string.info_dialog_combine_image_okBtn_title), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        combineTwoImage();
-                    }
-                });
-                builder.setNegativeButton(getString(R.string.info_dialog_combine_image_cancelBtn_title), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-
-                    }
-                });
-                builder.create().show();
-
+                if (mUri == null) {
+                    Toast.makeText(CombineImageActivity.this, "请先选择一张图片！", Toast.LENGTH_SHORT).show();
+                }else {
+                    askBeforeCombineImage();
+                }
                 break;
 
         }
     }
 
+    private void jumpToPickImage() {
+        Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        intent.setType(ContentType);
+        startActivityForResult(intent, RESULT_CODE);
+    }
+
+    private void askBeforeCombineImage() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(CombineImageActivity.this);
+        builder.setTitle(getString(R.string.info_dialog_combine_image_title));
+        builder.setMessage(getString(R.string.info_dialog_combine_image_message));
+        builder.setPositiveButton(getString(R.string.info_dialog_combine_image_okBtn_title), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                combineTwoImage();
+            }
+        });
+        builder.setNegativeButton(getString(R.string.info_dialog_combine_image_cancelBtn_title), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+        builder.create().show();
+    }
+
     private void combineTwoImage() {
         //load the image ,the image is scaled
-        Bitmap bg = BitmapFactory.decodeResource(getResources(),R.mipmap.ic_launcher);
+        Bitmap bg = BitmapFactory.decodeFile(mUri.getPath());
+//        Bitmap bg = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
         Bitmap fg = BitmapFactory.decodeResource(getResources(), R.mipmap.fg);
         //so we rescale to the target size
-        Bitmap dstfg = Bitmap.createScaledBitmap(fg,mFgImage.getWidth(),mFgImage.getWidth(),true);
-        Bitmap dstbg = Bitmap.createScaledBitmap(bg,mBgImage.getWidth(),mBgImage.getHeight(),true);
+        Bitmap dstfg = Bitmap.createScaledBitmap(fg, mFgImage.getWidth(), mFgImage.getWidth(), true);
+        Bitmap dstbg = Bitmap.createScaledBitmap(bg, mBgImage.getWidth(), mBgImage.getHeight(), true);
         //use the fgImageView size to create a bitmap
-        Bitmap bitmap = Bitmap.createBitmap(mFgImage.getWidth(),mFgImage.getHeight(), Bitmap.Config.ARGB_8888);
+        Bitmap bitmap = Bitmap.createBitmap(mFgImage.getWidth(), mFgImage.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         //draw the bgColor
         canvas.drawColor(Color.WHITE);
         //draw the bg image at the bgImageView position
-        canvas.drawBitmap(dstbg, ViewCompat.getX(mBgImage),ViewCompat.getY(mBgImage),null);
+        canvas.drawBitmap(dstbg, ViewCompat.getX(mBgImage), ViewCompat.getY(mBgImage), null);
         //draw the fg image at the fgImageView position
-        canvas.drawBitmap(dstfg,0,(mFgImage.getHeight()- mFgImage.getWidth())/2,null);
+        canvas.drawBitmap(dstfg, 0, (mFgImage.getHeight() - mFgImage.getWidth()) / 2, null);
         canvas.save(Canvas.ALL_SAVE_FLAG);//保存
         canvas.restore();
-        saveImageToGallery(CombineImageActivity.this,bitmap);
+        saveImageToGallery(CombineImageActivity.this, bitmap);
         Toast.makeText(CombineImageActivity.this, "合并成功,请到相册中查看合并的图片！", Toast.LENGTH_SHORT).show();
     }
 
@@ -189,7 +225,7 @@ public class CombineImageActivity extends AppCompatActivity {
 
         // 其次把文件插入到系统图库
         try {
-            String path =  MediaStore.Images.Media.insertImage(context.getContentResolver(),
+            String path = MediaStore.Images.Media.insertImage(context.getContentResolver(),
                     file.getAbsolutePath(), fileName, null);
 
         } catch (FileNotFoundException e) {
@@ -201,9 +237,10 @@ public class CombineImageActivity extends AppCompatActivity {
 
     /**
      * get status bar height
+     *
      * @return
      */
-    private int getStatusBarHeight(){
+    private int getStatusBarHeight() {
         Class<?> c = null;
         Object obj = null;
         Field field = null;
@@ -222,9 +259,10 @@ public class CombineImageActivity extends AppCompatActivity {
 
     /**
      * get titleBar Height
+     *
      * @return
      */
-    private int getTitlebarheight(){
+    private int getTitlebarheight() {
         //get the status bar height
         Rect r = new Rect();
         getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
@@ -235,9 +273,10 @@ public class CombineImageActivity extends AppCompatActivity {
 
     /**
      * get screen height
+     *
      * @return
      */
-    private int getScreenHeight(){
+    private int getScreenHeight() {
         Display dis = getWindowManager().getDefaultDisplay();
         DisplayMetrics displayMetric = new DisplayMetrics();
         dis.getMetrics(displayMetric);
@@ -246,9 +285,10 @@ public class CombineImageActivity extends AppCompatActivity {
 
     /**
      * get screen width
+     *
      * @return
      */
-    private int getScreenWidth(){
+    private int getScreenWidth() {
         Display dis = getWindowManager().getDefaultDisplay();
         DisplayMetrics displayMetric = new DisplayMetrics();
         dis.getMetrics(displayMetric);
