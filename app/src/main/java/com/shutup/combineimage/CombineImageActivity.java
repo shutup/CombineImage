@@ -26,6 +26,12 @@ public class CombineImageActivity extends AppCompatActivity {
 
     private String TAG = "CombineImageActivity";
 
+
+    private int xStart = 0;
+    private int yStart = 0;
+    private int x = 0;
+    private int y = 0;
+
     private int screenOffset = 0;
 
     @InjectView(R.id.combineTwoImageButton)
@@ -59,11 +65,24 @@ public class CombineImageActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
 
                 if (event.getAction() == MotionEvent.ACTION_DOWN){
-
+                    x = (int) ViewCompat.getX(v);
+                    y = (int) ViewCompat.getY(v);
+                    xStart = (int) event.getRawX();
+                    yStart = (int) event.getRawY();
                 }else if (event.getAction() == MotionEvent.ACTION_MOVE){
-                    moveViewByLayout(v,(int)event.getRawX(),(int)event.getRawY());
+                    int xEnd = (int) event.getRawX();
+                    int yEnd = (int) event.getRawY();
+                    int xx = xEnd - xStart + x;
+                    int yy = yEnd - yStart + y;
+                    moveViewByLayout(v,xx,yy);
+                    Log.d(TAG, "onTouchMove: "+xx+"_"+yy);
                 }else if (event.getAction() == MotionEvent.ACTION_UP){
-
+                    int xEnd = (int) event.getRawX();
+                    int yEnd = (int) event.getRawY();
+                    int xx = xEnd - xStart + x;
+                    int yy = yEnd - yStart + y;
+                    moveViewByLayout(v,xx,yy);
+                    Log.d(TAG, "onTouchUp: "+xx+"_"+yy);
                 }
                 return true;
             }
@@ -79,8 +98,8 @@ public class CombineImageActivity extends AppCompatActivity {
      * @param rawY
      */
     private void moveViewByLayout(View view, int rawX, int rawY) {
-        int left = rawX - view.getWidth() / 2;
-        int top = rawY  - screenOffset - view.getHeight() / 2;
+        int left = rawX;
+        int top = rawY;
         int width = left + view.getWidth();
         int height = top + view.getHeight();
         view.layout(left, top, width, height);
