@@ -1,11 +1,19 @@
 package com.shutup.combineimage;
 
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v4.view.ViewCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -15,7 +23,12 @@ import android.view.View;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 
 import butterknife.ButterKnife;
@@ -111,22 +124,79 @@ public class CombineImageActivity extends AppCompatActivity {
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.combineTwoImageButton:
-                combineTwoImage();
+                AlertDialog.Builder builder = new  AlertDialog.Builder(CombineImageActivity.this);
+                builder.setTitle(getString(R.string.info_dialog_combine_image_title));
+                builder.setMessage(getString(R.string.info_dialog_combine_image_message));
+                builder.setPositiveButton(getString(R.string.info_dialog_combine_image_okBtn_title), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        combineTwoImage();
+                    }
+                });
+                builder.setNegativeButton(getString(R.string.info_dialog_combine_image_cancelBtn_title), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                });
+                builder.create().show();
+
                 break;
 
         }
     }
 
     private void combineTwoImage() {
+        //load the image ,the image is scaled
         Bitmap bg = BitmapFactory.decodeResource(getResources(),R.mipmap.ic_launcher);
         Bitmap fg = BitmapFactory.decodeResource(getResources(), R.mipmap.fg);
-
+        //so we rescale to the target size
+        Bitmap dstfg = Bitmap.createScaledBitmap(fg,mFgImage.getWidth(),mFgImage.getWidth(),true);
+        Bitmap dstbg = Bitmap.createScaledBitmap(bg,mBgImage.getWidth(),mBgImage.getHeight(),true);
+        //use the fgImageView size to create a bitmap
         Bitmap bitmap = Bitmap.createBitmap(mFgImage.getWidth(),mFgImage.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
-        canvas.drawBitmap(bg, ViewCompat.getX(mBgImage),ViewCompat.getY(mBgImage),null);
-        canvas.drawBitmap(fg,0,0,null);
+        //draw the bgColor
+        canvas.drawColor(Color.WHITE);
+        //draw the bg image at the bgImageView position
+        canvas.drawBitmap(dstbg, ViewCompat.getX(mBgImage),ViewCompat.getY(mBgImage),null);
+        //draw the fg image at the fgImageView position
+        canvas.drawBitmap(dstfg,0,(mFgImage.getHeight()- mFgImage.getWidth())/2,null);
         canvas.save(Canvas.ALL_SAVE_FLAG);//保存
         canvas.restore();
+        saveImageToGallery(CombineImageActivity.this,bitmap);
+        Toast.makeText(CombineImageActivity.this, "合并成功,请到相册中查看合并的图片！", Toast.LENGTH_SHORT).show();
+    }
+
+    public static void saveImageToGallery(Context context, Bitmap bmp) {
+        // 首先保存图片
+        File appDir = new File(Environment.getExternalStorageDirectory(), "CombineImage");
+        if (!appDir.exists()) {
+            appDir.mkdir();
+        }
+        String fileName = System.currentTimeMillis() + ".png";
+        File file = new File(appDir, fileName);
+        try {
+            FileOutputStream fos = new FileOutputStream(file);
+            bmp.compress(Bitmap.CompressFormat.PNG, 100, fos);
+            fos.flush();
+            fos.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // 其次把文件插入到系统图库
+        try {
+            String path =  MediaStore.Images.Media.insertImage(context.getContentResolver(),
+                    file.getAbsolutePath(), fileName, null);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        // 最后通知图库更新
+        context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + file.getAbsolutePath())));
     }
 
     /**

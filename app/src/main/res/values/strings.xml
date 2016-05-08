@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">CombineImage</string>
     <string name="combineTwoImage">合并两张图片</string>
+    <string name="info_dialog_combine_image_title">提示</string>
+    <string name="info_dialog_combine_image_message">确定要合并图像？</string>
+    <string name="info_dialog_combine_image_okBtn_title">确定</string>
+    <string name="info_dialog_combine_image_cancelBtn_title">取消</string>
 </resources>
